@@ -17,7 +17,7 @@
 export default {
     props: {
         bgColor: {
-            default: "#5F63F2",
+            default: "#f5511e",
         },
     },
 };
