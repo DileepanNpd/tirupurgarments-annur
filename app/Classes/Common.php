@@ -325,7 +325,7 @@ class Common
         $order = Order::find($orderId);
 
         if ($order) {
-            $start_series = 20000;
+            $start_series = 0;
             if($order->order_type == 'sales') {
                 $count = DB::table('payments as p')
                             ->leftJoin('order_payments as op', 'p.id', '=', 'op.payment_id')

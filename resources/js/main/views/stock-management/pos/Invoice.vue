@@ -10,7 +10,6 @@
         <div id="pos-invoice">
             <div style="max-width: 400px; margin: 0px auto" v-if="order && order.xid">
                 <div class="company-details">
-                    <h2>Pavi Tex</h2>
                     <h2>Tirupur Garments</h2>
                     <div v-if="order?.invoice_number?.startsWith('SALE-')">
                         <h2>GST: {{ selectedWarehouse.address }}</h2>
@@ -20,6 +19,7 @@
                         {{ $t("common.phone") }}: {{ selectedWarehouse.phone }}
                     </h4>
                     <h4>{{ $t("common.email") }}: {{ selectedWarehouse.email }}</h4>
+                    <h4>Jeeva Nagar, Vathiyar Thottam, Annur-641653</h4>
                 </div>
                 <div class="tax-invoice-details">
                     <h3 class="tax-invoice-title">
