@@ -10,6 +10,7 @@
         <div id="pos-invoice">
             <div style="max-width: 400px; margin: 0px auto" v-if="order && order.xid">
                 <div class="company-details">
+                    <h2>Pavi Tex</h2>
                     <h2>Tirupur Garments</h2>
                     <div v-if="order?.invoice_number?.startsWith('SALE-')">
                         <h2>GST: {{ selectedWarehouse.address }}</h2>
@@ -19,7 +20,6 @@
                         {{ $t("common.phone") }}: {{ selectedWarehouse.phone }}
                     </h4>
                     <h4>{{ $t("common.email") }}: {{ selectedWarehouse.email }}</h4>
-                    <h4>Jeeva Nagar, Vathiyar Thottam, Annur-641653</h4>
                 </div>
                 <div class="tax-invoice-details">
                     <h3 class="tax-invoice-title">
@@ -251,6 +251,15 @@
                         {{ formatAmountCurrency(order.total_tax_on_items) }}
                     </p>
                 </div>
+
+                <!-- UPI Payment QR -->
+                <div style="text-align: center; margin-top: 12px; padding: 8px 0; border-top: 1px dashed #ccc;">
+                    <p style="font-size: 12px; margin-bottom: 4px; font-weight: 600;">Scan &amp; Pay via UPI</p>
+                    <img :src="upiLink" width="130" height="130" style="display:block; margin: 0 auto;" />
+                    <p style="font-size: 11px; margin-top: 4px; color: #555;">q069778669@ybl</p>
+                    <p style="font-size: 10px; color: #888;">GPay &middot; PhonePe &middot; Paytm &middot; BHIM</p>
+                </div>
+
             </div>
         </div>
 
@@ -268,7 +277,7 @@
 </template>
 
 <script>
-import { ref, defineComponent } from "vue";
+import { ref, defineComponent, computed } from "vue";
 import { PrinterOutlined } from "@ant-design/icons-vue";
 import common from "../../../../common/composable/common";
 import BarcodeGenerator from "../../../../common/components/barcode/BarcodeGenerator.vue";
@@ -299,8 +308,33 @@ export default defineComponent({
             newWindow.document.write(invoiceContent);
             newWindow.document.write("</body></html>");
             newWindow.document.close();
-            newWindow.print();
+            // Wait for all images (including QR) to load before printing
+            var images = newWindow.document.images;
+            if (images.length === 0) {
+                newWindow.print();
+            } else {
+                var loaded = 0;
+                var total = images.length;
+                var doPrint = () => {
+                    loaded++;
+                    if (loaded >= total) newWindow.print();
+                };
+                for (var i = 0; i < images.length; i++) {
+                    if (images[i].complete) {
+                        doPrint();
+                    } else {
+                        images[i].onload  = doPrint;
+                        images[i].onerror = doPrint; // print anyway if image fails
+                    }
+                }
+            }
         };
+
+        const upiLink = computed(() => {
+            const amount = props.order?.total ? parseFloat(props.order.total).toFixed(2) : "0.00";
+            const data = `upi://pay?pa=q069778669@ybl&pn=Pavi%20Tex&am=${amount}&cu=INR&tn=Invoice%20${props.order?.invoice_number || ""}`;
+            return `https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=${encodeURIComponent(data)}`;
+        });
 
         return {
             onClose,
@@ -308,6 +342,7 @@ export default defineComponent({
             selectedWarehouse,
             formatAmountCurrency,
             printInvoice,
+            upiLink,
         };
     },
 });
