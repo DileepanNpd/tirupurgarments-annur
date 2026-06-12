@@ -10,8 +10,7 @@
         <div id="pos-invoice">
             <div style="max-width: 400px; margin: 0px auto" v-if="order && order.xid">
                 <div class="company-details">
-                    <h2>Pavi Tex</h2>
-                    <h2>Tirupur Garments</h2>
+                    <h2>Tirupur Garments - Annur</h2>
                     <div v-if="order?.invoice_number?.startsWith('SALE-')">
                         <h2>GST: {{ selectedWarehouse.address }}</h2>
                     </div>
