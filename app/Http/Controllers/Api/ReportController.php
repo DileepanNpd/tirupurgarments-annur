@@ -173,6 +173,97 @@ class ReportController extends ApiBaseController
         ]);
     }
 
+    public function monthlyGstReport()
+    {
+        $request = request();
+        $warehouse = warehouse();
+        $company = company();
+
+        [$startDate, $endDate] = $this->getMonthDateRange($request, $company);
+
+        $query = Order::where('order_type', 'sales')
+            ->where('orders.warehouse_id', $warehouse->id)
+            ->with([
+                'user:id,name,phone',
+                'orderPayments.payment.paymentMode:id,name',
+            ])
+            ->orderBy('order_date');
+
+        if ($startDate && $endDate) {
+            $query->whereBetween('order_date', [$startDate, $endDate]);
+        }
+
+        $orders = $query->get();
+
+        $results = $orders->map(function ($order) use ($company) {
+            $halfTax = round($order->tax_amount / 2, 2);
+
+            $paymentModes = $order->orderPayments
+                ->map(fn($op) => optional(optional($op->payment)->paymentMode)->name)
+                ->filter()
+                ->unique()
+                ->implode(', ');
+
+            return [
+                'order_date'      => $order->order_date->setTimezone($company->timezone)->format('d/m/Y'),
+                'invoice_number'  => $order->invoice_number,
+                'customer_name'   => $order->user ? $order->user->name : '-',
+                'customer_phone'  => $order->user ? $order->user->phone : '-',
+                'total_quantity'  => (float) $order->total_quantity,
+                'taxable_value'   => round($order->subtotal, 2),
+                'cgst_amount'     => $halfTax,
+                'sgst_amount'     => $halfTax,
+                'total_tax'       => round($order->tax_amount, 2),
+                'discount'        => round($order->discount, 2),
+                'shipping'        => round($order->shipping, 2),
+                'total'           => round($order->total, 2),
+                'payment_mode'    => $paymentModes ?: '-',
+                'payment_status'  => $order->payment_status,
+                'due_amount'      => round($order->due_amount, 2),
+            ];
+        });
+
+        $totals = [
+            'total_quantity' => $results->sum('total_quantity'),
+            'taxable_value'  => round($results->sum('taxable_value'), 2),
+            'cgst_amount'    => round($results->sum('cgst_amount'), 2),
+            'sgst_amount'    => round($results->sum('sgst_amount'), 2),
+            'total_tax'      => round($results->sum('total_tax'), 2),
+            'discount'       => round($results->sum('discount'), 2),
+            'shipping'       => round($results->sum('shipping'), 2),
+            'total'          => round($results->sum('total'), 2),
+        ];
+
+        return ApiResponse::make('Success', [
+            'results' => $results->values(),
+            'totals'  => $totals,
+        ]);
+    }
+
+    private function getMonthDateRange($request, $company)
+    {
+        if ($request->has('month_year') && $request->month_year) {
+            $parts = explode('-', $request->month_year);
+            $year = (int) $parts[0];
+            $month = (int) $parts[1];
+
+            $startDate = Carbon::createFromDate($year, $month, 1, $company->timezone)
+                ->startOfDay()
+                ->setTimezone('UTC')
+                ->format('Y-m-d H:i:s');
+
+            $endDate = Carbon::createFromDate($year, $month, 1, $company->timezone)
+                ->endOfMonth()
+                ->endOfDay()
+                ->setTimezone('UTC')
+                ->format('Y-m-d H:i:s');
+
+            return [$startDate, $endDate];
+        }
+
+        return [null, null];
+    }
+
     public function getProfitLossByDates($startDate, $endDate)
     {
         $request = request();

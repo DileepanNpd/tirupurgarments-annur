@@ -34,6 +34,7 @@ ApiRoute::group(['namespace' => 'App\Http\Controllers\Api'], function () {
 
         // Reports
         ApiRoute::post('reports/profit-loss', ['as' => 'api.reports.profit-loss', 'uses' => 'ReportController@profitLoss']);
+        ApiRoute::post('reports/monthly-gst-report', ['as' => 'api.reports.monthly-gst-report', 'uses' => 'ReportController@monthlyGstReport']);
 
         // Warehouse History
         ApiRoute::resource('warehouse-history', 'WarehouseHistoryController', ['as' => 'api', 'only' => ['index']]);

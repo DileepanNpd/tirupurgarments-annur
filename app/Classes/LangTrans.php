@@ -200,7 +200,8 @@ class LangTrans
             'pos_settings' => 'POS Settings',
             'setup_company' => 'Setup Company',
             'expense_reports' => 'Expense Reports',
-            'variations' => 'Variations'
+            'variations' => 'Variations',
+            'monthly_report' => 'Monthly Report'
         ],
         'dashboard' => [
             'dashboard' => 'Dashboard',

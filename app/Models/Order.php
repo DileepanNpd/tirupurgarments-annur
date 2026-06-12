@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Casts\Hash;
 use App\Classes\Common;
 use App\Models\BaseModel;
+use App\Models\OrderItemTax;
 use App\Scopes\CompanyScope;
 
 class Order extends BaseModel
@@ -69,6 +70,11 @@ class Order extends BaseModel
     public function items()
     {
         return $this->hasMany(OrderItem::class, 'order_id', 'id');
+    }
+
+    public function orderItemTaxes()
+    {
+        return $this->hasMany(OrderItemTax::class, 'order_id', 'id');
     }
 
     public function orderPayments()

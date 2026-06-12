@@ -1,4 +1,5 @@
 // import Admin from '../../common/layouts/Admin.vue';
+import MonthlyReport from '../views/reports/monthly-report/index.vue';
 import Payments from '../views/reports/payments/index.vue';
 import StockAlert from '../views/reports/stock-alert/index.vue';
 import Users from '../views/reports/users/index.vue';
@@ -117,6 +118,17 @@ export default [
                     requireAuth: true,
                     menuParent: "reports",
                     menuKey: "profit_loss",
+                }
+            },
+            {
+                path: 'monthly-report',
+                component: MonthlyReport,
+                name: 'admin.reports.monthly_report.index',
+                meta: {
+                    requireAuth: true,
+                    menuParent: "reports",
+                    menuKey: "monthly_report",
+                    permission: "sales_view"
                 }
             },
 

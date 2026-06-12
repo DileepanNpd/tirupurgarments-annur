@@ -7,6 +7,7 @@ import ProductSalesSummaryFields from "../../main/views/reports/product-sales-su
 import ProfitLossFields from "../../main/views/reports/profit-loss/fields";
 import UserFields from "../../main/views/reports/users/fields";
 import ExpenseFields from "../../main/views/reports/expenses/fields";
+import MonthlyGstReportFields from "../../main/views/reports/monthly-report/fields";
 
 
 const allFields = () => {
@@ -19,6 +20,7 @@ const allFields = () => {
     const profitLossData = ProfitLossFields();
     const userData = UserFields();
     const expenseData = ExpenseFields();
+    const monthlyGstData = MonthlyGstReportFields();
 
     const getColumns = (columnType) => {
         if (columnType == "payment_reports") {
@@ -41,6 +43,8 @@ const allFields = () => {
             return profitLossData.dateWiseColumns;
         } else if (columnType == "expense_reports") {
             return expenseData.expenseColumns;
+        } else if (columnType == "monthly_gst_reports") {
+            return monthlyGstData.columns;
         }
     };
 

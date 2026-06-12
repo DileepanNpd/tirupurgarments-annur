@@ -366,6 +366,21 @@
 			>
 				{{ $t("menu.users_reports") }}
 			</a-menu-item>
+			<a-menu-item
+				v-if="
+					permsArray.includes('sales_view') ||
+					permsArray.includes('admin')
+				"
+				@click="
+					() => {
+						menuSelected();
+						$router.push({ name: 'admin.reports.monthly_report.index' });
+					}
+				"
+				key="monthly_report"
+			>
+				{{ $t("menu.monthly_report") }}
+			</a-menu-item>
 		</a-sub-menu>
 
 		<component
