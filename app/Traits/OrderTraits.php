@@ -143,7 +143,7 @@ trait OrderTraits
         $oldOrderId = "";
 
         if ($order->invoice_number == '') {
-            $order->invoice_number = Common::getTransactionNumber($order->order_type, $order->id);
+            $order->invoice_number = Common::getTransactionNumber($order->order_type, Common::getNextOrderSequenceNumber($order->order_type));
         }
 
         // Created by user

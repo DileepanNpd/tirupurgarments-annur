@@ -157,7 +157,7 @@ class PosController extends ApiBaseController
         $order->staff_user_id = $loggedInUser->id;
         $order->save();
 
-        $order->invoice_number = Common::getTransactionNumber($order->order_type, number: $order->id);
+        $order->invoice_number = Common::getTransactionNumber($order->order_type, Common::getNextOrderSequenceNumber($order->order_type));
         $order->save();
 
         Common::storeAndUpdateOrder($order, $oldOrderId);
@@ -185,7 +185,7 @@ class PosController extends ApiBaseController
 
                 // Generate and save payment number
                 $paymentType = 'payment-' . $payment->payment_type;
-                $payment->payment_number = Common::getTransactionNumber($paymentType, $payment->id);
+                $payment->payment_number = Common::getTransactionNumber($paymentType, Common::getNextPaymentSequenceNumber($paymentType));
                 $payment->save();
 
                 $orderPayment = new OrderPayment();

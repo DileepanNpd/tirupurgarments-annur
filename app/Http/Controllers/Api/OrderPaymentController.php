@@ -116,7 +116,7 @@ class OrderPaymentController extends ApiBaseController
         $newPayment->save();
 
         // Saving Payment Number
-        $newPayment->payment_number = Common::getTransactionNumber('payment-' . $paymentType, $newPayment->id);
+        $newPayment->payment_number = Common::getTransactionNumber('payment-' . $paymentType, Common::getNextPaymentSequenceNumber('payment-' . $paymentType));
         $newPayment->save();
 
         $newOrderPayment = new OrderPayment();

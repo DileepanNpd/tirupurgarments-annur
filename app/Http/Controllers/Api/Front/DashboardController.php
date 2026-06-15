@@ -178,7 +178,7 @@ class DashboardController extends ApiBaseController
             $order->order_status = "ordered";
             $order->save();
 
-            $order->invoice_number = Common::getTransactionNumber($order->order_type, $order->id);
+            $order->invoice_number = Common::getTransactionNumber($order->order_type, Common::getNextOrderSequenceNumber($order->order_type));
             $order->save();
 
             foreach ($allProducts as $allProduct) {

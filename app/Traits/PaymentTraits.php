@@ -87,7 +87,7 @@ trait PaymentTraits
 
         if ($payment->payment_number == null) {
             $paymentType = 'payment-' . $payment->payment_type;
-            $payment->payment_number = Common::getTransactionNumber($paymentType, $payment->id);
+            $payment->payment_number = Common::getTransactionNumber($paymentType, Common::getNextPaymentSequenceNumber($paymentType));
         }
 
         $payment->paid_amount = $paidAmount;

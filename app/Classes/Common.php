@@ -320,20 +320,49 @@ class Common
         }
     }
 
+    public static function getFinancialYearStart(?Carbon $date = null): Carbon
+    {
+        $date = $date ?? Carbon::now();
+        $year = $date->month >= 4 ? $date->year : $date->year - 1;
+        return Carbon::create($year, 4, 1)->startOfDay();
+    }
+
+    // Returns the sequential number for a new order within the current financial year.
+    // Call AFTER the order is saved so the count includes it.
+    public static function getNextOrderSequenceNumber(string $orderType): int
+    {
+        $fyStart = self::getFinancialYearStart();
+        return Order::where('order_type', $orderType)
+            ->where('order_date', '>=', $fyStart)
+            ->count();
+    }
+
+    // Returns the sequential number for a new payment within the current financial year.
+    // Call AFTER the payment is saved so the count includes it.
+    public static function getNextPaymentSequenceNumber(string $paymentType): int
+    {
+        $fyStart = self::getFinancialYearStart();
+        $type = str_replace('payment-', '', $paymentType);
+        return Payment::where('payment_type', $type)
+            ->where('date', '>=', $fyStart->toDateString())
+            ->count();
+    }
+
     public static function updateTransactionNumber($orderId)
     {
         $order = Order::find($orderId);
 
         if ($order) {
-            $start_series = 0;
-            if($order->order_type == 'sales') {
+            if ($order->order_type == 'sales') {
+                $fyStart = self::getFinancialYearStart();
                 $count = DB::table('payments as p')
                             ->leftJoin('order_payments as op', 'p.id', '=', 'op.payment_id')
                             ->where('p.payment_type', 'in')
                             ->where('p.payment_mode_id', '>', 1)
+                            ->where('p.date', '>=', $fyStart->toDateString())
                             ->distinct()
-                            ->count('op.order_id');        
-                $order->invoice_number = 'SALE-'.($start_series + $count);
+                            ->count('op.order_id');
+                $order->invoice_number = 'SALE-' . $count;
                 $order->save();
             }
         }
