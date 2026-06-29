@@ -267,7 +267,7 @@
                 <!-- UPI Payment QR -->
                 <div style="text-align: center; margin-top: 12px; padding: 8px 0; border-top: 1px dashed #ccc;">
                     <p style="font-size: 12px; margin-bottom: 4px; font-weight: 600;">Scan &amp; Pay via UPI</p>
-                    <img :src="upiLink" width="130" height="130" style="display:block; margin: 0 auto;" />
+                    <canvas ref="upiCanvas" class="upi-qr-canvas" style="display:block; margin: 0 auto;"></canvas>
                     <p style="font-size: 11px; margin-top: 4px; color: #555;">q069778669@ybl</p>
                     <p style="font-size: 10px; color: #888;">GPay &middot; PhonePe &middot; Paytm &middot; BHIM</p>
                 </div>
@@ -289,8 +289,9 @@
 </template>
 
 <script>
-import { ref, defineComponent, computed } from "vue";
+import { ref, defineComponent, computed, watch, nextTick } from "vue";
 import { PrinterOutlined } from "@ant-design/icons-vue";
+import QRCode from "qrcode";
 import common from "../../../../common/composable/common";
 import BarcodeGenerator from "../../../../common/components/barcode/BarcodeGenerator.vue";
 import QRcodeGenerator from "../../../../common/components/barcode/QRcodeGenerator.vue";
@@ -307,15 +308,71 @@ export default defineComponent({
     setup(props, { emit }) {
         const { formatAmountCurrency, formatDate, selectedWarehouse } = common();
 
+        const upiCanvas = ref(null);
+
         const onClose = () => {
             emit("closed");
         };
 
+        // Build the UPI intent string — payee + amount only for the simplest, sparsest QR
+        const upiData = computed(() => {
+            const amount = props.order?.total
+                ? parseFloat(props.order.total).toFixed(2)
+                : "0.00";
+            return `upi://pay?pa=q069778669@ybl&am=${amount}`;
+        });
+
+        // Render the QR locally onto the canvas with crisp, integer-scaled modules.
+        // Low error correction + a wide quiet zone = chunky, well-separated lines
+        // that print cleanly on thermal paper.
+        const renderQR = async () => {
+            await nextTick();
+            if (!upiCanvas.value) return;
+            try {
+                await QRCode.toCanvas(upiCanvas.value, upiData.value, {
+                    errorCorrectionLevel: "L", // lowest = fewest modules = chunkiest lines
+                    margin: 4, // wider white quiet zone around the QR
+                    scale: 8, // bigger blocks, clearly separated
+                    color: { dark: "#000000", light: "#ffffff" },
+                });
+            } catch (err) {
+                console.error("UPI QR render failed:", err);
+            }
+        };
+
+        // Re-render whenever the modal opens or the order/amount changes
+        watch(
+            () => [props.visible, upiData.value],
+            () => {
+                if (props.visible) renderQR();
+            },
+            { immediate: true }
+        );
+
         const printInvoice = () => {
+            // Snapshot the live canvas into a PNG <img> so the print window keeps
+            // the pixels (a blank canvas would otherwise be copied).
+            const canvas = document.querySelector("#pos-invoice canvas");
+            if (canvas) {
+                const img = document.createElement("img");
+                img.src = canvas.toDataURL("image/png");
+                img.width = canvas.width;
+                img.height = canvas.height;
+                img.className = "upi-qr-img";
+                canvas.parentNode.replaceChild(img, canvas);
+                // Restore the canvas in the modal after printing
+                setTimeout(() => {
+                    if (img.parentNode) {
+                        img.parentNode.replaceChild(canvas, img);
+                        renderQR();
+                    }
+                }, 0);
+            }
+
             var invoiceContent = document.getElementById("pos-invoice").innerHTML;
             var newWindow = window.open("", "", "height=500, width=500");
             newWindow.document.write(
-                `<link rel="stylesheet" href="${posInvoiceCssUrl}"><html><style scoped>table {border-collapse: collapse;width: 100%;}table, th, td {border: 1px solid #bbb;}th, td {padding: 1px;text-align: center;}</style><body>`
+                `<link rel="stylesheet" href="${posInvoiceCssUrl}"><html><style scoped>table {border-collapse: collapse;width: 100%;}table, th, td {border: 1px solid #bbb;}th, td {padding: 1px;text-align: center;} img.upi-qr-img {image-rendering: pixelated; image-rendering: crisp-edges; -webkit-print-color-adjust: exact; print-color-adjust: exact;}</style><body>`
             );
             newWindow.document.write(invoiceContent);
             newWindow.document.write("</body></html>");
@@ -327,9 +384,13 @@ export default defineComponent({
             } else {
                 var loaded = 0;
                 var total = images.length;
+                var printed = false;
                 var doPrint = () => {
                     loaded++;
-                    if (loaded >= total) newWindow.print();
+                    if (loaded >= total && !printed) {
+                        printed = true;
+                        newWindow.print();
+                    }
                 };
                 for (var i = 0; i < images.length; i++) {
                     if (images[i].complete) {
@@ -341,12 +402,6 @@ export default defineComponent({
                 }
             }
         };
-
-        const upiLink = computed(() => {
-            const amount = props.order?.total ? parseFloat(props.order.total).toFixed(2) : "0.00";
-            const data = `upi://pay?pa=q069778669@ybl&pn=Pavi%20Tex&am=${amount}&cu=INR&tn=Invoice%20${props.order?.invoice_number || ""}`;
-            return `https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=${encodeURIComponent(data)}`;
-        });
 
         // Half of the order tax — used to display CGST and SGST separately on the invoice
         const halfTaxAmount = computed(() => {
@@ -360,7 +415,8 @@ export default defineComponent({
             selectedWarehouse,
             formatAmountCurrency,
             printInvoice,
-            upiLink,
+            upiCanvas,
+            upiData,
             halfTaxAmount,
         };
     },
@@ -380,4 +436,5 @@ th, td {
     padding: 1px;
     text-align: center;
 }
+.upi-qr-canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
 </style>
